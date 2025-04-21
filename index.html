@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Writing Correction Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        .task-type {
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .result-container {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .score-container {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .score-box {
+            text-align: center;
+            flex: 1;
+            padding: 10px;
+        }
+
+        .score-box h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #555;
+        }
+
+        .score-box .score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+
+        .overall-score {
+            background-color: #3498db;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .overall-score h3,
+        .overall-score .score {
+            color: white;
+        }
+
+        .feedback-section {
+            margin-top: 20px;
+        }
+
+        .error {
+            background-color: #ffecec;
+            border-left: 3px solid #ff6b6b;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .correction {
+            background-color: #e7f7e7;
+            border-left: 3px solid #6bcb77;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .highlighted-text {
+            margin-top: 30px;
+            line-height: 1.8;
+        }
+
+        .grammar-error {
+            background-color: #ffcccc;
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .vocabulary-error {
+            background-color: #ffffcc;
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .coherence-error {
+            background-color: #cce0ff;
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            margin-left: 15px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            display: inline-block;
+            margin-right: 5px;
+            border-radius: 3px;
+        }
+
+        .word-count {
+            text-align: right;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>IELTS Writing Correction Tool</h1>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('writing')">Writing Correction</div>
+            <div class="tab" onclick="switchTab('info')">IELTS Info</div>
+        </div>
+
+        <div id="writing-tab">
+            <div class="task-type">
+                <label><input type="radio" name="task" value="task1" checked> Task 1 (Graph/Chart Description)</label>
+                <label style="margin-left: 20px;"><input type="radio" name="task" value="task2"> Task 2 (Essay)</label>
+            </div>
+
+            <textarea id="essay-input" placeholder="Paste your IELTS writing response here..."></textarea>
+            <div class="word-count">Word count: <span id="word-count">0</span></div>
+
+            <button onclick="analyzeEssay()">Analyze Writing</button>
+
+            <div id="result-container" class="result-container">
+                <h2>Analysis Results</h2>
+
+                <div class="score-container">
+                    <div class="score-box">
+                        <h3>Task Achievement</h3>
+                        <div class="score" id="task-score">0.0</div>
+                    </div>
+                    <div class="score-box">
+                        <h3>Coherence & Cohesion</h3>
+                        <div class="score" id="coherence-score">0.0</div>
+                    </div>
+                    <div class="score-box">
+                        <h3>Lexical Resource</h3>
+                        <div class="score" id="lexical-score">0.0</div>
+                    </div>
+                    <div class="score-box">
+                        <h3>Grammar</h3>
+                        <div class="score" id="grammar-score">0.0</div>
+                    </div>
+                    <div class="score-box overall-score">
+                        <h3>Overall</h3>
+                        <div class="score" id="overall-score">0.0</div>
+                    </div>
+                </div>
+
+                <div class="feedback-section">
+                    <h3>Overall Feedback</h3>
+                    <p id="overall-feedback"></p>
+
+                    <h3>Detailed Corrections</h3>
+                    <div id="corrections-container"></div>
+
+                    <h3>Your Text with Highlights</h3>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: #ffcccc;"></span> Grammar
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: #ffffcc;"></span> Vocabulary
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: #cce0ff;"></span> Coherence
+                        </div>
+                    </div>
+                    <div class="highlighted-text" id="highlighted-text"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="info-tab" style="display: none;">
+            <h2>IELTS Writing Assessment Criteria</h2>
+
+            <h3>Task 1</h3>
+            <ul>
+                <li><strong>Task Achievement:</strong> How well you address all parts of the task with relevant
+                    information.</li>
+                <li><strong>Coherence and Cohesion:</strong> How well your answer is organized with proper paragraphing
+                    and linking.</li>
+                <li><strong>Lexical Resource:</strong> Your range and accuracy of vocabulary.</li>
+                <li><strong>Grammatical Range and Accuracy:</strong> Your range and accuracy of grammar.</li>
+            </ul>
+
+            <h3>Task 2</h3>
+            <ul>
+                <li><strong>Task Response:</strong> How well you address all parts of the task with a position supported
+                    by relevant ideas.</li>
+                <li><strong>Coherence and Cohesion:</strong> How well your essay is organized with proper paragraphing
+                    and linking.</li>
+                <li><strong>Lexical Resource:</strong> Your range and accuracy of vocabulary.</li>
+                <li><strong>Grammatical Range and Accuracy:</strong> Your range and accuracy of grammar.</li>
+            </ul>
+
+            <h3>Band Score Requirements</h3>
+            <ul>
+                <li><strong>Band 9 (Expert):</strong> Complete mastery of English with accurate, appropriate, and fluent
+                    usage.</li>
+                <li><strong>Band 8 (Very Good):</strong> Very good command with only occasional inaccuracies.</li>
+                <li><strong>Band 7 (Good):</strong> Good command with some inaccuracies and misunderstandings.</li>
+                <li><strong>Band 6 (Competent):</strong> Generally effective command with some errors and
+                    misunderstandings.</li>
+                <li><strong>Band 5 (Modest):</strong> Partial command with many errors and misunderstandings.</li>
+                <li><strong>Band 4 (Limited):</strong> Limited command with frequent problems in accuracy and
+                    understanding.</li>
+            </ul>
+
+            <h3>Word Count Requirements</h3>
+            <ul>
+                <li><strong>Task 1:</strong> Minimum 150 words</li>
+                <li><strong>Task 2:</strong> Minimum 250 words</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Function to switch between tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            if (tabName === 'writing') {
+                document.getElementById('writing-tab').style.display = 'block';
+                document.getElementById('info-tab').style.display = 'none';
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+            } else {
+                document.getElementById('writing-tab').style.display = 'none';
+                document.getElementById('info-tab').style.display = 'block';
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+            }
+        }
+
+        // Word count functionality
+        document.getElementById('essay-input').addEventListener('input', function () {
+            const text = this.value.trim();
+            const wordCount = text ? text.split(/\s+/).length : 0;
+            document.getElementById('word-count').textContent = wordCount;
+        });
+
+        // Grammar rules for error detection
+        const grammarRules = [
+            { pattern: /\b(is|are|was|were)\s+(\w+ing)\b/gi, message: "Incorrect continuous tense formation" },
+            { pattern: /\b(have|has|had)\s+(\w+)\b/gi, message: "Potential perfect tense error", excludeWords: ["been", "had", "have", "has"] },
+            { pattern: /\ba\s+([aeiou]\w*)\b/gi, message: "Use 'an' before vowel sounds" },
+            { pattern: /\ban\s+([^aeiou\s]\w*)\b/gi, message: "Use 'a' before consonant sounds" },
+            { pattern: /\b(i|we|they|you|he|she|it)\s+(is|am|are|was|were)\s+not\b/gi, message: "Consider using contracted form" },
+            { pattern: /\b(their|there|they're|your|you're|its|it's|whose|who's)\b/gi, message: "Common confusable words - check usage" },
+            { pattern: /\b(affect|effect|then|than|weather|whether)\b/gi, message: "Common confusable words - check usage" },
+            { pattern: /\s+,/g, message: "No space before comma" },
+            { pattern: /,[^\s]/g, message: "Need space after comma" },
+            { pattern: /\s+\./g, message: "No space before period" },
+            { pattern: /\.\s*[a-z]/g, message: "Capitalize after period" },
+        ];
+
+        // Vocabulary rules
+        const vocabularyIssues = [
+            { pattern: /\b(very|really|so|good|bad|nice|interesting|important)\b/gi, message: "Consider using more precise vocabulary" },
+            { pattern: /\b(thing|stuff)\b/gi, message: "Use more specific nouns" },
+            { pattern: /\b(a lot|lots of|many|much)\b/gi, message: "Consider more academic alternatives" },
+            { pattern: /\b(get|got|getting)\b/gi, message: "Use more formal alternatives" },
+            { pattern: /\b(big|small|large)\b/gi, message: "Consider more precise size descriptions" },
+            { pattern: /\b(said|says)\b/gi, message: "Consider more precise reporting verbs" },
+            { pattern: /\bin conclusion\b/gi, message: "Consider more varied concluding phrases" },
+        ];
+
+        // Coherence issues
+        const coherenceIssues = [
+            { pattern: /\b(firstly|secondly|thirdly|finally)\b/gi, message: "Good use of sequencing marker" },
+            { pattern: /\b(therefore|thus|consequently|hence)\b/gi, message: "Good use of logical connector" },
+            { pattern: /\b(however|nevertheless|nonetheless|on the other hand)\b/gi, message: "Good use of contrast marker" },
+            { pattern: /\b(for example|for instance|such as)\b/gi, message: "Good use of example indicator" },
+            { pattern: /\b(in addition|furthermore|moreover|besides)\b/gi, message: "Good use of addition marker" },
+            { pattern: /^[A-Z].*[^.!?]$/gm, message: "Sentence may be incomplete" },
+        ];
+
+        // Function to analyze the essay
+        function analyzeEssay() {
+            const essayText = document.getElementById('essay-input').value.trim();
+            if (!essayText) {
+                alert("Please enter your essay text first!");
+                return;
+            }
+
+            // Get task type
+            const taskType = document.querySelector('input[name="task"]:checked').value;
+
+            // Calculate word count
+            const wordCount = essayText ? essayText.split(/\s+/).length : 0;
+            const minWordCount = taskType === 'task1' ? 150 : 250;
+
+            // Find errors
+            const grammarErrors = findGrammarErrors(essayText);
+            const vocabularyErrors = findVocabularyIssues(essayText);
+            const coherenceErrors = findCoherenceIssues(essayText);
+
+            // Calculate scores
+            const taskScore = calculateTaskScore(essayText, taskType, wordCount, minWordCount);
+            const coherenceScore = calculateCoherenceScore(essayText, coherenceErrors);
+            const lexicalScore = calculateLexicalScore(essayText, vocabularyErrors);
+            const grammarScore = calculateGrammarScore(essayText, grammarErrors);
+
+            const overallScore = ((taskScore + coherenceScore + lexicalScore + grammarScore) / 4).toFixed(1);
+
+            // Display results
+            document.getElementById('task-score').textContent = taskScore.toFixed(1);
+            document.getElementById('coherence-score').textContent = coherenceScore.toFixed(1);
+            document.getElementById('lexical-score').textContent = lexicalScore.toFixed(1);
+            document.getElementById('grammar-score').textContent = grammarScore.toFixed(1);
+            document.getElementById('overall-score').textContent = overallScore;
+
+            // Generate feedback
+            generateOverallFeedback(taskScore, coherenceScore, lexicalScore, grammarScore, wordCount, minWordCount);
+
+            // Generate detailed corrections
+            generateDetailedCorrections(grammarErrors, vocabularyErrors, coherenceErrors);
+
+            // Generate highlighted text
+            generateHighlightedText(essayText, grammarErrors, vocabularyErrors, coherenceErrors);
+
+            // Show results
+            document.getElementById('result-container').style.display = 'block';
+
+            // Scroll to results
+            document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Find grammar errors in the text
+        function findGrammarErrors(text) {
+            const errors = [];
+            grammarRules.forEach(rule => {
+                let match;
+                while ((match = rule.pattern.exec(text)) !== null) {
+                    // Check if the matched word is in the exclude list
+                    let shouldExclude = false;
+                    if (rule.excludeWords) {
+                        for (const word of rule.excludeWords) {
+                            if (match[0].toLowerCase().includes(word.toLowerCase())) {
+                                shouldExclude = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!shouldExclude) {
+                        errors.push({
+                            index: match.index,
+                            length: match[0].length,
+                            text: match[0],
+                            message: rule.message,
+                            type: 'grammar'
+                        });
+                    }
+                }
+            });
+            return errors;
+        }
+
+        // Find vocabulary issues in the text
+        function findVocabularyIssues(text) {
+            const issues = [];
+            vocabularyIssues.forEach(issue => {
+                let match;
+                while ((match = issue.pattern.exec(text)) !== null) {
+                    issues.push({
+                        index: match.index,
+                        length: match[0].length,
+                        text: match[0],
+                        message: issue.message,
+                        type: 'vocabulary'
+                    });
+                }
+            });
+            return issues;
+        }
+
+        // Find coherence issues in the text
+        function findCoherenceIssues(text) {
+            const issues = [];
+            coherenceIssues.forEach(issue => {
+                let match;
+                while ((match = issue.pattern.exec(text)) !== null) {
+                    issues.push({
+                        index: match.index,
+                        length: match[0].length,
+                        text: match[0],
+                        message: issue.message,
+                        type: 'coherence'
+                    });
+                }
+            });
+
+            // Check paragraph structure
+            const paragraphs = text.split(/\n\s*\n/);
+            if (paragraphs.length < 3) {
+                issues.push({
+                    index: 0,
+                    length: 10,
+                    text: "Paragraph structure",
+                    message: "Consider using more paragraphs for better organization",
+                    type: 'coherence'
+                });
+            }
+
+            return issues;
+        }
+
+        // Calculate task achievement score
+        function calculateTaskScore(text, taskType, wordCount, minWordCount) {
+            let score = 6.0; // Starting score
+
+            // Word count penalty
+            if (wordCount < minWordCount) {
+                score -= (minWordCount - wordCount) / 50;
+            }
+
+            // Check for introduction presence
+            const firstParagraph = text.split(/\n\s*\n/)[0] || "";
+            const hasIntro = firstParagraph.length > 50;
+            if (!hasIntro) score -= 0.5;
+
+            // Check for conclusion presence
+            const paragraphs = text.split(/\n\s*\n/);
+            const lastParagraph = paragraphs[paragraphs.length - 1] || "";
+            const hasConclusion = lastParagraph.length > 50 &&
+                (lastParagraph.toLowerCase().includes("conclusion") ||
+                    lastParagraph.toLowerCase().includes("summarize") ||
+                    lastParagraph.toLowerCase().includes("overall"));
+            if (!hasConclusion) score -= 0.5;
+
+            // Task 2 specific checks
+            if (taskType === 'task2') {
+                // Check for thesis statement
+                const hasThesis = firstParagraph.toLowerCase().includes("believe") ||
+                    firstParagraph.toLowerCase().includes("opinion") ||
+                    firstParagraph.toLowerCase().includes("agree") ||
+                    firstParagraph.toLowerCase().includes("disagree");
+                if (!hasThesis) score -= 0.5;
+
+                // Check for examples
+                const hasExamples = text.toLowerCase().includes("for example") ||
+                    text.toLowerCase().includes("for instance") ||
+                    text.toLowerCase().includes("such as");
+                if (!hasExamples) score -= 0.5;
+            }
+
+            // Task 1 specific checks
+            if (taskType === 'task1') {
+                // Check for overview paragraph
+                const hasOverview = text.toLowerCase().includes("overall") ||
+                    text.toLowerCase().includes("in summary") ||
+                    text.toLowerCase().includes("to summarize");
+                if (!hasOverview) score -= 0.5;
+
+                // Check for data references
+                const hasData = (text.match(/\d+/g) || []).length > 3;
+                if (!hasData) score -= 0.5;
+            }
+
+            // Ensure score is within bounds
+            return Math.max(4.0, Math.min(score, 9.0));
+        }
+
+        // Calculate coherence score
+        function calculateCoherenceScore(text, coherenceIssues) {
+            let score = 6.0; // Starting score
+
+            // Check paragraph structure
+            const paragraphs = text.split(/\n\s*\n/);
+            if (paragraphs.length >= 4) score += 0.5;
+            else if (paragraphs.length <= 1) score -= 1.0;
+
+            // Check for cohesive devices
+            const cohesiveDevices = [
+                "firstly", "secondly", "finally", "therefore", "thus", "consequently",
+                "however", "nevertheless", "furthermore", "moreover", "in addition"
+            ];
+
+            let deviceCount = 0;
+            cohesiveDevices.forEach(device => {
+                const regex = new RegExp('\\b' + device + '\\b', 'gi');
+                const matches = text.match(regex);
+                if (matches) deviceCount += matches.length;
+            });
+
+            if (deviceCount >= 5) score += 0.5;
+            else if (deviceCount <= 1) score -= 0.5;
+
+            // Check sentence variety
+            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            const sentLengths = sentences.map(s => s.trim().split(/\s+/).length);
+
+            // Calculate standard deviation of sentence lengths for variety
+            if (sentLengths.length > 0) {
+                const avg = sentLengths.reduce((sum, len) => sum + len, 0) / sentLengths.length;
+                const variance = sentLengths.reduce((sum, len) => sum + Math.pow(len - avg, 2), 0) / sentLengths.length;
+                const stdDev = Math.sqrt(variance);
+
+                if (stdDev > 5) score += 0.5; // Good variety
+                else if (stdDev < 2) score -= 0.5; // Poor variety
+            }
+
+            // Ensure score is within bounds
+            return Math.max(4.0, Math.min(score, 9.0));
+        }
+
+        // Calculate lexical resource score
+        function calculateLexicalScore(text, vocabularyIssues) {
+            let score = 6.0; // Starting score
+
+            // Calculate lexical diversity
+            const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+            const uniqueWords = new Set(words);
+            const lexicalDiversity = uniqueWords.size / words.length;
+
+            if (lexicalDiversity > 0.6) score += 1.0;
+            else if (lexicalDiversity > 0.5) score += 0.5;
+            else if (lexicalDiversity < 0.4) score -= 0.5;
+
+            // Check for advanced vocabulary
+            const advancedWords = [
+                "nevertheless", "consequently", "furthermore", "substantial", "significantly",
+                "crucial", "fundamental", "extensive", "considerable", "essentially",
+                "predominantly", "unprecedented", "controversial", "inherent", "comprehensive"
+            ];
+
+            let advancedCount = 0;
+            advancedWords.forEach(word => {
+                const regex = new RegExp('\\b' + word + '\\b', 'gi');
+                const matches = text.match(regex);
+                if (matches) advancedCount += matches.length;
+            });
+
+            if (advancedCount >= 5) score += 1.0;
+            else if (advancedCount >= 3) score += 0.5;
+
+            // Penalize for vocabulary issues
+            const issueRatio = vocabularyIssues.length / (words.length / 100);
+            if (issueRatio > 5) score -= 1.0;
+            else if (issueRatio > 2) score -= 0.5;
+
+            // Ensure score is within bounds
+            return Math.max(4.0, Math.min(score, 9.0));
+        }
+
+        // Calculate grammar score
+        function calculateGrammarScore(text, grammarErrors) {
+            let score = 6.0; // Starting score
+
+            // Calculate error density
+            const words = text.split(/\s+/).length;
+            const errorRatio = grammarErrors.length / (words / 100);
+
+            if (errorRatio < 1) score += 1.5;
+            else if (errorRatio < 2) score += 1.0;
+            else if (errorRatio < 3) score += 0.5;
+            else if (errorRatio > 5) score -= 0.5;
+            else if (errorRatio > 7) score -= 1.0;
+
+            // Check for complex sentence structures
+            const complexStructures = [
+                "although", "despite", "in spite of", "whereas", "while", "unless",
+                "provided that", "even though", "not only", "but also"
+            ];
+
+            let complexCount = 0;
+            complexStructures.forEach(structure => {
+                const regex = new RegExp('\\b' + structure + '\\b', 'gi');
+                const matches = text.match(regex);
+                if (matches) complexCount += matches.length;
+            });
+
+            if (complexCount >= 5) score += 0.5;
+            else if (complexCount <= 1) score -= 0.5;
+
+            // Ensure score is within bounds
+            return Math.max(4.0, Math.min(score, 9.0));
+        }
+
+        // Generate overall feedback
+        function generateOverallFeedback(taskScore, coherenceScore, lexicalScore, grammarScore, wordCount, minWordCount) {
+            let feedback = "";
+
+            // Word count feedback
+            if (wordCount < minWordCount) {
+                feedback += `<p><strong>Word Count:</strong> Your essay has ${wordCount} words, which is below the minimum requirement of ${minWordCount} words. Aim to write at least ${minWordCount} words to avoid penalties.</p>`;
+            } else {
+                feedback += `<p><strong>Word Count:</strong> Your essay has ${wordCount} words, which meets the minimum requirement of ${minWordCount} words.</p>`;
+            }
+
+            // Task Achievement feedback
+            feedback += "<p><strong>Task Achievement:</strong> ";
+            if (taskScore >= 7.0) {
+                feedback += "You have addressed all parts of the task with relevant, fully extended ideas and appropriate support.";
+            } else if (taskScore >= 6.0) {
+                feedback += "You have addressed all parts of the task, though some aspects could be developed further.";
+            } else {
+                feedback += "Your response does not fully address all parts of the task. Consider including a clearer position/overview and more supporting details.";
+            }
+            feedback += "</p>";
+
+            // Coherence feedback
+            feedback += "<p><strong>Coherence and Cohesion:</strong> ";
+            if (coherenceScore >= 7.0) {
+                feedback += "Your essay is well-organized with good use of paragraphing and cohesive devices.";
+            } else if (coherenceScore >= 6.0) {
+                feedback += "Your essay has a clear overall progression, though cohesive devices could be used more effectively.";
+            } else {
+                feedback += "Your essay would benefit from better organization and more effective use of cohesive devices.";
+            }
+            feedback += "</p>";
+
+            // Lexical feedback
+            feedback += "<p><strong>Lexical Resource:</strong> ";
+            if (lexicalScore >= 7.0) {
+                feedback += "You use a good range of vocabulary with flexibility and precision.";
+            } else if (lexicalScore >= 6.0) {
+                feedback += "You use an adequate range of vocabulary for the task, with some limitations.";
+            } else {
+                feedback += "Your vocabulary is limited and repetitive. Try to use more varied and precise vocabulary.";
+            }
+            feedback += "</p>";
+
+            // Grammar feedback
+            feedback += "<p><strong>Grammatical Range and Accuracy:</strong> ";
+            if (grammarScore >= 7.0) {
+                feedback += "You use a variety of complex structures with good control of grammar and punctuation.";
+            } else if (grammarScore >= 6.0) {
+                feedback += "You use a mix of simple and complex structures with some errors that do not impede communication.";
+            } else {
+                feedback += "You make frequent grammatical errors that sometimes impede communication. Try to use more accurate grammar.";
+            }
+            feedback += "</p>";
+
+            document.getElementById('overall-feedback').innerHTML = feedback;
+        }
+
+        // Generate detailed corrections
+        // Generate detailed corrections
+        function generateDetailedCorrections(grammarErrors, vocabularyErrors, coherenceErrors) {
+            const correctionsContainer = document.getElementById('corrections-container');
+            correctionsContainer.innerHTML = '';
+
+            // Grammar errors
+            if (grammarErrors.length > 0) {
+                const grammarSection = document.createElement('div');
+                grammarSection.innerHTML = '<h4>Grammar Issues</h4>';
+                grammarErrors.forEach(error => {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error';
+                    errorDiv.innerHTML = `
+                <strong>Error:</strong> "${error.text}"<br>
+                <strong>Issue:</strong> ${error.message}<br>
+                <strong>Suggestion:</strong> ${generateSuggestion(error)}
+            `;
+                    grammarSection.appendChild(errorDiv);
+                });
+                correctionsContainer.appendChild(grammarSection);
+            }
+
+            // Vocabulary issues
+            if (vocabularyErrors.length > 0) {
+                const vocabSection = document.createElement('div');
+                vocabSection.innerHTML = '<h4>Vocabulary Suggestions</h4>';
+                vocabularyErrors.forEach(error => {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error';
+                    errorDiv.innerHTML = `
+                <strong>Word/Phrase:</strong> "${error.text}"<br>
+                <strong>Suggestion:</strong> ${error.message}<br>
+                <strong>Alternatives:</strong> ${getAlternatives(error.text)}
+            `;
+                    vocabSection.appendChild(errorDiv);
+                });
+                correctionsContainer.appendChild(vocabSection);
+            }
+
+            // Coherence issues
+            if (coherenceErrors.length > 0) {
+                const coherenceSection = document.createElement('div');
+                coherenceSection.innerHTML = '<h4>Coherence & Cohesion Notes</h4>';
+                coherenceErrors.forEach(error => {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = error.message.includes('Good use') ? 'correction' : 'error';
+                    errorDiv.innerHTML = `
+                <strong>${error.message.includes('Good use') ? 'Strength' : 'Issue'}:</strong> "${error.text}"<br>
+                <strong>Note:</strong> ${error.message}
+            `;
+                    coherenceSection.appendChild(errorDiv);
+                });
+                correctionsContainer.appendChild(coherenceSection);
+            }
+
+            if (grammarErrors.length === 0 && vocabularyErrors.length === 0 && coherenceErrors.length === 0) {
+                correctionsContainer.innerHTML = '<p>No specific issues detected. This doesn\'t guarantee a perfect score - human examiners may notice nuances this tool cannot detect.</p>';
+            }
+        }
+
+        // Generate suggestion for grammar error
+        function generateSuggestion(error) {
+            // Simple rule-based suggestions
+            if (error.message.includes("Use 'an' before vowel sounds")) {
+                return `Change "a ${error.text.split(' ')[1]}" to "an ${error.text.split(' ')[1]}"`;
+            } else if (error.message.includes("Use 'a' before consonant sounds")) {
+                return `Change "an ${error.text.split(' ')[1]}" to "a ${error.text.split(' ')[1]}"`;
+            } else if (error.message.includes("contracted form")) {
+                const parts = error.text.split(' ');
+                const contraction = parts[0] + "'" + parts[2].substring(0, 1);
+                return `Consider using "${contraction}" instead of "${error.text}"`;
+            } else if (error.message.includes("No space before comma")) {
+                return "Remove space before comma";
+            } else if (error.message.includes("Need space after comma")) {
+                return "Add space after comma";
+            } else if (error.message.includes("No space before period")) {
+                return "Remove space before period";
+            } else if (error.message.includes("Capitalize after period")) {
+                return "Capitalize the letter following a period";
+            } else if (error.message.includes("Incorrect continuous tense")) {
+                return "Review your verb tense structure";
+            } else if (error.message.includes("Perfect tense error")) {
+                return "Check your perfect tense formation - consider using a past participle";
+            } else if (error.message.includes("confusable words")) {
+                return "Double-check word choice - these words are commonly confused";
+            }
+
+            return "Review this section for grammatical accuracy";
+        }
+
+        // Get alternative vocabulary suggestions
+        function getAlternatives(text) {
+            const wordAlternatives = {
+                'very': 'extremely, exceptionally, particularly',
+                'really': 'genuinely, truly, actually',
+                'so': 'therefore, consequently, thus',
+                'good': 'beneficial, advantageous, favorable',
+                'bad': 'detrimental, unfavorable, substandard',
+                'nice': 'pleasant, agreeable, delightful',
+                'interesting': 'intriguing, compelling, fascinating',
+                'important': 'significant, crucial, essential',
+                'thing': 'aspect, element, factor',
+                'stuff': 'materials, items, components',
+                'a lot': 'numerous, substantial, considerable',
+                'lots of': 'an abundance of, a wealth of, a plethora of',
+                'many': 'numerous, various, several',
+                'much': 'considerable, substantial, significant',
+                'get': 'obtain, acquire, receive',
+                'got': 'obtained, acquired, received',
+                'getting': 'obtaining, acquiring, receiving',
+                'big': 'substantial, significant, considerable',
+                'small': 'minimal, limited, modest',
+                'large': 'extensive, substantial, considerable',
+                'said': 'stated, asserted, declared',
+                'says': 'states, asserts, declares',
+                'in conclusion': 'to conclude, in summary, ultimately'
+            };
+
+            const word = text.toLowerCase();
+            return wordAlternatives[word] || 'Consider more academic or precise alternatives';
+        }
+
+        // Generate highlighted text with errors marked
+        function generateHighlightedText(text, grammarErrors, vocabularyErrors, coherenceErrors) {
+            // Combine all errors and sort by index
+            const allErrors = [...grammarErrors, ...vocabularyErrors, ...coherenceErrors].sort((a, b) => a.index - b.index);
+
+            // Create HTML with error highlighting
+            let highlightedHTML = text;
+            let offset = 0;
+
+            allErrors.forEach(error => {
+                const errorClass = error.type === 'grammar' ? 'grammar-error' :
+                    error.type === 'vocabulary' ? 'vocabulary-error' : 'coherence-error';
+
+                const start = error.index + offset;
+                const end = start + error.length;
+
+                const beforeError = highlightedHTML.substring(0, start);
+                const errorText = highlightedHTML.substring(start, end);
+                const afterError = highlightedHTML.substring(end);
+
+                const spanTag = `<span class="${errorClass}" title="${error.message}">${errorText}</span>`;
+                highlightedHTML = beforeError + spanTag + afterError;
+
+                // Adjust offset for added HTML
+                offset += spanTag.length - errorText.length;
+            });
+
+            // Replace newlines with <br> for HTML display
+            highlightedHTML = highlightedHTML.replace(/\n\s*\n/g, '<br><br>').replace(/\n/g, '<br>');
+
+            document.getElementById('highlighted-text').innerHTML = highlightedHTML;
+        }
+
+        // Make sure the word count function runs properly when the page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            const essayInput = document.getElementById('essay-input');
+
+            // Set initial word count
+            if (essayInput.value) {
+                const text = essayInput.value.trim();
+                const wordCount = text ? text.split(/\s+/).length : 0;
+                document.getElementById('word-count').textContent = wordCount;
+            }
+
+            // Listen for input events to update word count in real-time
+            essayInput.addEventListener('input', function () {
+                const text = this.value.trim();
+                const wordCount = text ? text.split(/\s+/).length : 0;
+                document.getElementById('word-count').textContent = wordCount;
+            });
+        });
+    </script>
+</body>
